@@ -1,8 +1,5 @@
 import axios from "axios";
 
-console.log("CLIENT =", process.env.OZON_CLIENT_ID);
-console.log("API =", process.env.OZON_API_KEY);
-
 const ozon = axios.create({
   baseURL: "https://api-seller.ozon.ru",
   headers: {
