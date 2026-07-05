@@ -1,15 +1,5 @@
 import type { ChatCompletionTool } from "openai/resources/chat/completions";
-import { getProductsDetailed } from "../integrations/ozon/products";
-import { MOCK_PRODUCTS, MOCK_SALES, type OzonProduct } from "../integrations/ozon/mock";
-
-// Мок включается, если явно задан OZON_MOCK=true,
-// либо если реальные ключи Ozon не заданы (например, на машине разработчика).
-export function isMock(): boolean {
-  const flag = process.env.OZON_MOCK?.toLowerCase();
-  if (flag === "true") return true;
-  if (flag === "false") return false;
-  return !process.env.OZON_CLIENT_ID || !process.env.OZON_API_KEY;
-}
+import { getProducts, getSalesSummary } from "../integrations/ozon/store";
 
 // Описание инструментов для OpenAI. GPT сам решает, какой вызвать.
 export const tools: ChatCompletionTool[] = [
@@ -36,24 +26,13 @@ export const tools: ChatCompletionTool[] = [
   },
 ];
 
-async function getProducts(): Promise<OzonProduct[]> {
-  if (isMock()) return MOCK_PRODUCTS;
-  return getProductsDetailed();
-}
-
-function getSalesSummary() {
-  // Реальная аналитика Ozon требует отдельной интеграции (/v1/analytics/data).
-  // Пока для живого режима тоже возвращаем сводку-заглушку той же формы.
-  return MOCK_SALES;
-}
-
 // Выполнить инструмент по имени и вернуть результат в виде строки для GPT.
 export async function runTool(name: string): Promise<string> {
   switch (name) {
     case "get_products":
       return JSON.stringify(await getProducts());
     case "get_sales_summary":
-      return JSON.stringify(getSalesSummary());
+      return JSON.stringify(await getSalesSummary());
     default:
       return JSON.stringify({ error: `Неизвестный инструмент: ${name}` });
   }

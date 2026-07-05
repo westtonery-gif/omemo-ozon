@@ -52,8 +52,10 @@ export interface OzonSalesSummary {
   revenue: number; // выручка, ₽
   avg_check: number; // средний чек, ₽
   conversion: number; // конверсия в заказ, %
-  ad_spend: number; // расходы на рекламу, ₽
-  drr: number; // доля рекламных расходов, %
+  // Реклама и ДРР приходят из отдельного Performance API. Пока он не подключён,
+  // в живом режиме здесь null («нет данных»), а не 0 — чтобы не вводить в заблуждение.
+  ad_spend: number | null; // расходы на рекламу, ₽
+  drr: number | null; // доля рекламных расходов, %
 }
 
 export const MOCK_SALES: OzonSalesSummary = {
