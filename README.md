@@ -1,36 +1,38 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Ozonologist
 
-## Getting Started
+AI-ассистент для продавцов Ozon: чат уровня ChatGPT, который получает реальные данные
+магазина через Ozon Seller API и анализирует их с помощью GPT.
 
-First, run the development server:
+> 📌 Полное состояние проекта, архитектура, что сделано и что осталось —
+> в [PROGRESS.md](./PROGRESS.md). Читай его первым при продолжении работы.
+
+## Быстрый старт
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env.local   # затем впиши ключи в .env.local
+npm run dev                  # → http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Ключи (.env.local)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `OPENAI_API_KEY` — обязателен (чтобы чат отвечал).
+- `OZON_CLIENT_ID`, `OZON_API_KEY` — для реальных данных магазина.
+  Без них приложение работает на **мок-данных** (тестовый магазин) — код тот же.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Подробности по переменным — в [.env.example](./.env.example).
 
-## Learn More
+## Как это работает
 
-To learn more about Next.js, take a look at the following resources:
+Браузер → API-роут `/api/agent-chat` → OpenAI (tool calling) → инструменты Ozon
+(`get_products`, `get_sales_summary`) → GPT анализирует данные → ответ в чат.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+GPT не выдумывает цифры: если нужны данные магазина — он вызывает инструмент.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Полезные команды
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run dev        # дев-сервер
+npm run build      # прод-сборка
+npm run test:ozon  # проверить подключение к Ozon API
+```
