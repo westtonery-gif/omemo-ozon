@@ -3,7 +3,7 @@
 import { loadUnit } from "./load";
 import { resolveMetrics } from "./resolver";
 import { diagnose } from "./diagnose";
-import type { DiagnosticSession, ToolRunner } from "./types";
+import type { DiagnosticSession, ProductRef, ToolRunner } from "./types";
 
 // MVP intent: детерминированный матч по ключевым словам (LLM подключим позже).
 const SALES_DROP_KEYWORDS = [
@@ -28,7 +28,7 @@ function detectIntent(question: string): { scenario: string; unit_path: string }
 
 interface RunOpts {
   question: string;
-  productRef?: { offer_id: string };
+  productRef?: ProductRef; // { offer_id?, sku? }; если нет — resolver берёт первый товар
   tools?: ToolRunner; // eval подменяет на mock
 }
 

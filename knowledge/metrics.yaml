@@ -46,6 +46,16 @@ metrics:
     unit: reviews
     availability: available
 
+  rating:
+    name: "Рейтинг товара"
+    source: seller_api
+    tool: get_products
+    scope: product
+    field: rating
+    type: number
+    unit: rating
+    availability: available
+
   # ── из инструмента get_sales_analytics (scope: store) ──
   revenue_30d:
     name: "Выручка магазина за 30 дней"

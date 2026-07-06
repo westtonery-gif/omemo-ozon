@@ -29,6 +29,8 @@ interface ProductInfoItem {
   price?: string;
   old_price?: string;
   sku?: number; // нужен, чтобы сопоставить товар с заказами из аналитики
+  reviews_count?: number; // если Ozon вернёт — берём; иначе останется unknown
+  rating?: number;
   // Ozon отдаёт остатки массивом по складам/источникам: stocks.stocks[].present
   stocks?: { stocks?: ProductInfoStock[] };
 }
@@ -71,11 +73,15 @@ export async function getProductsDetailed(): Promise<OzonProduct[]> {
     );
     return {
       offer_id: p.offer_id,
+      sku: p.sku,
       name: p.name ?? p.offer_id,
       price,
       old_price: oldPrice || price,
       stock,
       orders_30d: ordersBySku ? ordersBySku[String(p.sku ?? "")] ?? 0 : null,
+      // Если Ozon не отдаёт отзывы/рейтинг в info — оставляем null (unknown), не 0.
+      reviews_count: p.reviews_count ?? null,
+      rating: p.rating ?? null,
     };
   });
 }

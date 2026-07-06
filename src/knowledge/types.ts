@@ -38,9 +38,25 @@ export interface Diagnosis {
   findings: string[];
 }
 
+// Ссылка на товар. Оба поля опциональны; если нет — runtime берёт первый товар.
+export interface ProductRef {
+  offer_id?: string;
+  sku?: number;
+}
+
+// Контекст товара, который Metric Resolver прокидывает в контекстные инструменты
+// (напр. search_competitors). Строится из результата get_products.
+export interface ToolContext {
+  title?: string;
+  category?: string | null;
+  price?: number;
+  offer_id?: string;
+  sku?: number;
+}
+
 export interface DiagnosticSession {
   question: string;
-  product_ref?: { offer_id: string };
+  product_ref?: ProductRef;
   intent: { scenario: string; unit_id: string | null };
   metrics: MetricResult[];
   formulas: FormulaResult[];
@@ -72,5 +88,5 @@ export interface ToolResult {
 
 export type ToolRunner = (
   tool: string,
-  input?: Record<string, unknown>
+  context?: ToolContext
 ) => Promise<ToolResult>;
