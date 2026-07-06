@@ -78,3 +78,59 @@ export async function getSalesSummaryLive(
   cache = { at: Date.now(), periodDays, data: result };
   return result;
 }
+
+// Заказы (ordered_units) по каждому SKU за период — чтобы заполнить orders_30d
+// по товарам. /v1/analytics/data с разбивкой dimension: ["sku"].
+interface SkuRow {
+  dimensions?: Array<{ id?: string; name?: string }>;
+  metrics?: number[];
+}
+interface SkuAnalyticsResponse {
+  result?: { data?: SkuRow[] };
+}
+
+let ordersCache: {
+  at: number;
+  periodDays: number;
+  data: Record<string, number>;
+} | null = null;
+
+export async function getOrdersBySku(
+  periodDays = 30
+): Promise<Record<string, number>> {
+  if (
+    ordersCache &&
+    ordersCache.periodDays === periodDays &&
+    Date.now() - ordersCache.at < CACHE_TTL_MS
+  ) {
+    return ordersCache.data;
+  }
+
+  const dateTo = new Date();
+  const dateFrom = new Date();
+  dateFrom.setDate(dateFrom.getDate() - periodDays);
+
+  const response = await ozon.post("/v1/analytics/data", {
+    date_from: isoDate(dateFrom),
+    date_to: isoDate(dateTo),
+    metrics: ["ordered_units"],
+    dimension: ["sku"],
+    filters: [],
+    sort: [],
+    limit: 1000,
+    offset: 0,
+  });
+
+  const data = response.data as SkuAnalyticsResponse;
+  const rows = data.result?.data ?? [];
+  const map: Record<string, number> = {};
+  for (const row of rows) {
+    // dimensions[0].id — это SKU товара, metrics[0] — заказано штук.
+    const sku = String(row.dimensions?.[0]?.id ?? "");
+    const units = Number(row.metrics?.[0] ?? 0);
+    if (sku) map[sku] = units;
+  }
+
+  ordersCache = { at: Date.now(), periodDays, data: map };
+  return map;
+}

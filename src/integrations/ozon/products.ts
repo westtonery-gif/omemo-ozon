@@ -1,4 +1,5 @@
 import ozon from "./client";
+import { getOrdersBySku } from "./analytics";
 import type { OzonProduct } from "./mock";
 
 // Сырой список товаров: только product_id и offer_id.
@@ -27,6 +28,7 @@ interface ProductInfoItem {
   name?: string;
   price?: string;
   old_price?: string;
+  sku?: number; // нужен, чтобы сопоставить товар с заказами из аналитики
   // Ozon отдаёт остатки массивом по складам/источникам: stocks.stocks[].present
   stocks?: { stocks?: ProductInfoStock[] };
 }
@@ -50,6 +52,15 @@ export async function getProductsDetailed(): Promise<OzonProduct[]> {
   // Детали приходят в data.items (без обёртки result).
   const infoItems: ProductInfoItem[] = info?.data?.items ?? [];
 
+  // Заказы за 30 дней по каждому SKU из аналитики. Если аналитика недоступна
+  // (лимит/нет подписки) — не роняем товары, просто оставляем заказы = 0.
+  let ordersBySku: Record<string, number> = {};
+  try {
+    ordersBySku = await getOrdersBySku(30);
+  } catch {
+    ordersBySku = {};
+  }
+
   return infoItems.map((p) => {
     const price = Number(p.price ?? 0);
     const oldPrice = Number(p.old_price ?? 0);
@@ -64,7 +75,7 @@ export async function getProductsDetailed(): Promise<OzonProduct[]> {
       price,
       old_price: oldPrice || price,
       stock,
-      orders_30d: 0, // требует отдельного запроса аналитики; пока 0
+      orders_30d: ordersBySku[String(p.sku ?? "")] ?? 0,
     };
   });
 }
