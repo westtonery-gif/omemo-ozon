@@ -17,12 +17,18 @@ interface ProductListItem {
   offer_id: string;
 }
 
+interface ProductInfoStock {
+  present?: number;
+  reserved?: number;
+}
+
 interface ProductInfoItem {
   offer_id: string;
   name?: string;
   price?: string;
   old_price?: string;
-  stocks?: { present?: number };
+  // Ozon отдаёт остатки массивом по складам/источникам: stocks.stocks[].present
+  stocks?: { stocks?: ProductInfoStock[] };
 }
 
 // Реальные товары с деталями, приведённые к формату OzonProduct.
@@ -41,17 +47,23 @@ export async function getProductsDetailed(): Promise<OzonProduct[]> {
     sku: [],
   });
 
-  const infoItems: ProductInfoItem[] = info?.data?.result?.items ?? [];
+  // Детали приходят в data.items (без обёртки result).
+  const infoItems: ProductInfoItem[] = info?.data?.items ?? [];
 
   return infoItems.map((p) => {
     const price = Number(p.price ?? 0);
     const oldPrice = Number(p.old_price ?? 0);
+    // Остаток — сумма present по всем складам/источникам.
+    const stock = (p.stocks?.stocks ?? []).reduce(
+      (sum, s) => sum + (s.present ?? 0),
+      0
+    );
     return {
       offer_id: p.offer_id,
       name: p.name ?? p.offer_id,
       price,
       old_price: oldPrice || price,
-      stock: p.stocks?.present ?? 0,
+      stock,
       orders_30d: 0, // требует отдельного запроса аналитики; пока 0
     };
   });
