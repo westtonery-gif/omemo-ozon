@@ -30,3 +30,15 @@ export async function getSalesSummary(): Promise<OzonSalesSummary> {
   // Живой режим: продажи из Seller API. Реклама/ДРР пока null (нужен Performance API).
   return getSalesSummaryLive();
 }
+
+// Человекочитаемое сообщение по ошибке запроса к Ozon (для страниц и агента).
+export function ozonErrorMessage(e: unknown): string {
+  const status = (e as { response?: { status?: number } })?.response?.status;
+  if (status === 429) {
+    return "Ozon вернул 429 — превышен лимит запросов аналитики (≈1 запрос в минуту). Подождите минуту и обновите.";
+  }
+  if (status === 401 || status === 403) {
+    return "Ozon отклонил запрос (нет доступа). Проверьте ключи Seller API в .env.local.";
+  }
+  return "Не удалось получить данные из Ozon. Попробуйте позже.";
+}

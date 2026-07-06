@@ -24,9 +24,24 @@ function isoDate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
+// Эндпоинт /v1/analytics/data у Ozon жёстко лимитирован (≈1 запрос в минуту,
+// иначе 429). Кэшируем результат в памяти, чтобы повторные заходы на страницы
+// и вызовы инструмента не спамили API.
+const CACHE_TTL_MS = 10 * 60 * 1000; // 10 минут
+let cache: { at: number; periodDays: number; data: OzonSalesSummary } | null =
+  null;
+
 export async function getSalesSummaryLive(
   periodDays = 30
 ): Promise<OzonSalesSummary> {
+  if (
+    cache &&
+    cache.periodDays === periodDays &&
+    Date.now() - cache.at < CACHE_TTL_MS
+  ) {
+    return cache.data;
+  }
+
   const dateTo = new Date();
   const dateFrom = new Date();
   dateFrom.setDate(dateFrom.getDate() - periodDays);
@@ -49,7 +64,7 @@ export async function getSalesSummaryLive(
   const orders = Number(totals[1] ?? 0);
   const sessions = Number(totals[2] ?? 0);
 
-  return {
+  const result: OzonSalesSummary = {
     period_days: periodDays,
     orders,
     revenue,
@@ -59,4 +74,7 @@ export async function getSalesSummaryLive(
     ad_spend: null, // требует Performance API
     drr: null,
   };
+
+  cache = { at: Date.now(), periodDays, data: result };
+  return result;
 }

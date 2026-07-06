@@ -1,5 +1,9 @@
 import type { ChatCompletionTool } from "openai/resources/chat/completions";
-import { getProducts, getSalesSummary } from "../integrations/ozon/store";
+import {
+  getProducts,
+  getSalesSummary,
+  ozonErrorMessage,
+} from "../integrations/ozon/store";
 
 // Описание инструментов для OpenAI. GPT сам решает, какой вызвать.
 export const tools: ChatCompletionTool[] = [
@@ -27,13 +31,18 @@ export const tools: ChatCompletionTool[] = [
 ];
 
 // Выполнить инструмент по имени и вернуть результат в виде строки для GPT.
+// Ошибку Ozon не роняем, а отдаём модели текстом — она объяснит пользователю.
 export async function runTool(name: string): Promise<string> {
-  switch (name) {
-    case "get_products":
-      return JSON.stringify(await getProducts());
-    case "get_sales_summary":
-      return JSON.stringify(await getSalesSummary());
-    default:
-      return JSON.stringify({ error: `Неизвестный инструмент: ${name}` });
+  try {
+    switch (name) {
+      case "get_products":
+        return JSON.stringify(await getProducts());
+      case "get_sales_summary":
+        return JSON.stringify(await getSalesSummary());
+      default:
+        return JSON.stringify({ error: `Неизвестный инструмент: ${name}` });
+    }
+  } catch (e) {
+    return JSON.stringify({ error: ozonErrorMessage(e) });
   }
 }

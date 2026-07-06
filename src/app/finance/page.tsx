@@ -1,13 +1,40 @@
-import { getSalesSummary, isMock } from "../../integrations/ozon/store";
+import {
+  getSalesSummary,
+  isMock,
+  ozonErrorMessage,
+} from "../../integrations/ozon/store";
+import type { OzonSalesSummary } from "../../integrations/ozon/mock";
 import { formatRub, formatPct } from "../_ui/format";
 import PageHeader from "../_ui/page-header";
 import StatCard from "../_ui/stat-card";
+import ErrorCard from "../_ui/error-card";
 
 export const metadata = { title: "Финансы — Ozonologist" };
 
 export default async function FinancePage() {
-  const s = await getSalesSummary();
   const mock = isMock();
+  let s: OzonSalesSummary | null = null;
+  let error: string | null = null;
+  try {
+    s = await getSalesSummary();
+  } catch (e) {
+    error = ozonErrorMessage(e);
+  }
+
+  if (error || !s) {
+    return (
+      <div className="flex-1 overflow-y-auto">
+        <div className="mx-auto max-w-4xl px-6 py-8">
+          <PageHeader
+            title="Финансы"
+            subtitle="Движение денег магазина."
+            mock={mock}
+          />
+          <ErrorCard message={error ?? "Нет данных."} />
+        </div>
+      </div>
+    );
+  }
 
   // Реклама доступна только с Performance API. Без неё раскладку не строим.
   const hasAd = s.ad_spend !== null && s.drr !== null;
