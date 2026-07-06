@@ -25,6 +25,34 @@ interface ToolCallAcc {
   args: string;
 }
 
+// Понятное сообщение по ошибке OpenAI. Настоящая причина логируется в консоль,
+// а пользователю показываем конкретику (регион/лимит/сеть), а не общее «проверьте ключ».
+function openAiErrorMessage(error: unknown): string {
+  const e = error as {
+    status?: number;
+    code?: string;
+    error?: { code?: string };
+    message?: string;
+  };
+  const status = e?.status;
+  const code = e?.code ?? e?.error?.code;
+
+  if (status === 401) {
+    return "⚠️ OpenAI отклонил ключ. Проверьте OPENAI_API_KEY в `.env.local`.";
+  }
+  if (code === "unsupported_country_region_territory" || status === 403) {
+    return "⚠️ OpenAI заблокировал запрос по региону — похоже, VPN/прокси отвалился. Проверьте, что VPN включён, и перезапустите с `NODE_USE_ENV_PROXY=1`.";
+  }
+  if (status === 429) {
+    return "⚠️ OpenAI: слишком много запросов (429). Подождите немного и повторите.";
+  }
+  const msg = String(e?.message ?? "");
+  if (/timeout|ETIMEDOUT|ECONNRESET|ENOTFOUND|socket|network|fetch failed/i.test(msg)) {
+    return "⚠️ Не удалось соединиться с OpenAI (сеть или прокси). Проверьте VPN и повторите.";
+  }
+  return "⚠️ Не удалось получить ответ от OpenAI. Повторите попытку.";
+}
+
 export async function POST(req: NextRequest) {
   const body = await req.json();
 
@@ -129,11 +157,7 @@ export async function POST(req: NextRequest) {
         console.error(error);
         // Ошибку показываем только если ещё ничего не отправили клиенту.
         if (!streamedContent) {
-          controller.enqueue(
-            encoder.encode(
-              "⚠️ Не удалось получить ответ. Проверьте OPENAI_API_KEY в `.env.local` и попробуйте снова."
-            )
-          );
+          controller.enqueue(encoder.encode(openAiErrorMessage(error)));
         }
         controller.close();
       }
