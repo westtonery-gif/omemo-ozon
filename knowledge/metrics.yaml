@@ -1,0 +1,87 @@
+# Слой между Ozon Seller API и Knowledge Units.
+# Юнит знает только metric_id. Привязку к инструменту/полю держит ТОЛЬКО этот файл.
+# scope: product — метрика по товару; store — по магазину.
+version: 1
+
+metrics:
+
+  # ── из инструмента get_products (scope: product) ──
+  price:
+    name: "Текущая цена"
+    source: seller_api
+    tool: get_products
+    scope: product
+    field: price
+    type: number
+    unit: RUB
+    availability: available
+
+  stock:
+    name: "Остаток"
+    source: seller_api
+    tool: get_products
+    scope: product
+    field: stock
+    type: number
+    unit: units
+    availability: available
+
+  orders_30d:
+    name: "Заказов за 30 дней (по товару)"
+    source: seller_api
+    tool: get_products
+    scope: product
+    field: orders_30d
+    type: number
+    unit: orders
+    availability: requires_subscription
+
+  # ── из инструмента get_sales_analytics (scope: store) ──
+  revenue_30d:
+    name: "Выручка магазина за 30 дней"
+    source: seller_api
+    tool: get_sales_analytics
+    scope: store
+    field: revenue
+    type: number
+    unit: RUB
+    availability: available
+
+  orders_store_30d:
+    name: "Заказов магазина за 30 дней"
+    source: seller_api
+    tool: get_sales_analytics
+    scope: store
+    field: orders
+    type: number
+    unit: orders
+    availability: requires_subscription
+
+  sessions:
+    name: "Сессии магазина за 30 дней"
+    source: seller_api
+    tool: get_sales_analytics
+    scope: store
+    field: sessions
+    type: number
+    unit: sessions
+    availability: requires_subscription
+
+  # ── calculated (считает Formula Engine, НЕ LLM) ──
+  conversion:
+    name: "Конверсия магазина в заказ"
+    source: calculated
+    formula: conversion_rate
+    inputs: [orders_store_30d, sessions]
+    type: percent
+    unit: "%"
+    availability: derived
+
+  stock_days:
+    name: "На сколько дней хватит остатка"
+    source: calculated
+    formula: stock_days
+    inputs: [stock, orders_30d]
+    type: number
+    unit: days
+    availability: derived

@@ -8,11 +8,14 @@
     "start": "next start",
     "lint": "eslint",
     "bot": "tsx src/bot/telegram.ts",
-    "test:ozon": "tsx src/test-ozon.ts"
+    "test:ozon": "tsx src/test-ozon.ts",
+    "eval": "tsx src/eval-diagnosis.ts"
   },
   "dependencies": {
+    "@types/js-yaml": "^4.0.9",
     "axios": "^1.18.1",
     "dotenv": "^17.4.2",
+    "js-yaml": "^5.2.1",
     "next": "16.2.10",
     "openai": "^6.45.0",
     "react": "19.2.4",

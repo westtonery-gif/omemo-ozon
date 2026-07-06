@@ -1,0 +1,27 @@
+# Единый словарь категорий и уровней. MVP: только то, что использует срез.
+version: 1
+
+confidence_levels:
+  high:   { rank: 3, meaning: "детерминированно из данных + формул" }
+  medium: { rank: 2, meaning: "сильная эвристика, данные частичны" }
+  low:    { rank: 1, meaning: "гипотеза, нужны доп. данные" }
+
+severity_levels:
+  critical: { rank: 4, meaning: "прямая потеря продаж сейчас (out of stock)" }
+  high:     { rank: 3, meaning: "существенная упущенная выгода" }
+  medium:   { rank: 2, meaning: "недополученная эффективность" }
+  low:      { rank: 1, meaning: "оптимизация, не срочно" }
+
+problem_types:
+  visibility_drop:  "мало показов / падение видимости"
+  conversion_drop:  "клики есть, мало заказов"
+  stock_risk:       "остатки: дефицит"
+
+categories:
+  diagnostics: { title: "Кросс-диагностика", owner_agent: ozonologist }
+  inventory:   { title: "Управление остатками", owner_agent: ozonologist }
+  ranking:     { title: "Ранжирование и видимость", owner_agent: ozonologist }
+  seo:         { title: "Контент карточки / SEO", owner_agent: ozonologist }
+
+agents:
+  ozonologist: { role: orchestrator, owns_categories: [all] }
