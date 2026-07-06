@@ -8,6 +8,8 @@ import type {
   MetricResult,
   MetricStatus,
   MetricSource,
+  ProductRef,
+  ToolContext,
   ToolResult,
   ToolRunner,
 } from "./types";
@@ -23,8 +25,37 @@ function toolStateToStatus(state: ToolResult["state"]): MetricStatus {
 }
 
 interface ResolveOpts {
-  productRef?: { offer_id: string };
+  productRef?: ProductRef;
   tools?: ToolRunner;
+}
+
+// Найти строку товара по offer_id/sku, иначе первый.
+function pickProduct(
+  list: Array<Record<string, unknown>>,
+  ref?: ProductRef
+): Record<string, unknown> | undefined {
+  return (
+    list.find(
+      (p) =>
+        (ref?.offer_id && p.offer_id === ref.offer_id) ||
+        (ref?.sku !== undefined && p.sku === ref.sku)
+    ) ?? list[0]
+  );
+}
+
+// Собрать контекст товара из результата get_products (title/category/price).
+function buildContext(tr: ToolResult | undefined, ref?: ProductRef): ToolContext | undefined {
+  if (!tr || tr.state !== "ok") return undefined;
+  const list = ((tr.data as { products?: Array<Record<string, unknown>> })?.products) ?? [];
+  const row = pickProduct(list, ref);
+  if (!row) return undefined;
+  return {
+    title: typeof row.name === "string" ? row.name : undefined,
+    category: typeof row.category === "string" ? row.category : null,
+    price: typeof row.price === "number" ? row.price : undefined,
+    offer_id: typeof row.offer_id === "string" ? row.offer_id : undefined,
+    sku: typeof row.sku === "number" ? row.sku : undefined,
+  };
 }
 
 export async function resolveMetrics(
@@ -54,8 +85,17 @@ export async function resolveMetrics(
     )
       toolIds.add(def.tool);
   }
+  // get_products вызываем ПЕРВЫМ — из него строим ToolContext (title/category/price)
+  // для контекстных инструментов (search_competitors).
+  const ordered = [...toolIds].sort((a, b) =>
+    a === "get_products" ? -1 : b === "get_products" ? 1 : 0
+  );
   const toolResults = new Map<string, ToolResult>();
-  for (const t of toolIds) toolResults.set(t, await runTool(t));
+  let context: ToolContext | undefined;
+  for (const t of ordered) {
+    toolResults.set(t, await runTool(t, context));
+    if (t === "get_products") context = buildContext(toolResults.get(t), opts.productRef);
+  }
 
   const bundle: MetricBundle = {};
 
@@ -86,7 +126,7 @@ export async function resolveMetrics(
           : null;
     } else if (def.scope === "product" && !Array.isArray(data)) {
       const list = (data?.products as Array<Record<string, unknown>>) ?? [];
-      const row = list.find((p) => p.offer_id === opts.productRef?.offer_id) ?? list[0];
+      const row = pickProduct(list, opts.productRef);
       raw = row?.[def.field ?? ""];
     } else if (!Array.isArray(data)) {
       raw = data?.[def.field ?? ""];

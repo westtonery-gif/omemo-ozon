@@ -1,9 +1,19 @@
 import { NextRequest } from "next/server";
 import { runDiagnosis } from "../../../knowledge/runtime";
 import { synthesize } from "../../../knowledge/synthesize";
-import type { DiagnosticSession } from "../../../knowledge/types";
+import type { DiagnosticSession, ProductRef } from "../../../knowledge/types";
 
 type ClientMessage = { role: "user" | "assistant"; content: string };
+
+// Товар из запроса. Если не передан — runtime возьмёт первый товар магазина.
+function extractProductRef(body: unknown): ProductRef | undefined {
+  const p = (body as { productRef?: { offer_id?: unknown; sku?: unknown } })?.productRef;
+  if (!p) return undefined;
+  const ref: ProductRef = {};
+  if (typeof p.offer_id === "string") ref.offer_id = p.offer_id;
+  if (typeof p.sku === "number") ref.sku = p.sku;
+  return ref.offer_id || ref.sku !== undefined ? ref : undefined;
+}
 
 function latestUserQuestion(body: unknown): string {
   const b = body as { messages?: ClientMessage[]; message?: unknown };
@@ -80,7 +90,8 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const session = await runDiagnosis({ question });
+    const productRef = extractProductRef(body);
+    const session = await runDiagnosis({ question, productRef });
     logDiagnosticSession(session);
 
     const answer =
