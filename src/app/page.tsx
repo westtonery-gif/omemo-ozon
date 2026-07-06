@@ -26,10 +26,10 @@ export default function Home() {
   const messages = current?.messages ?? [];
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({
-      top: scrollRef.current.scrollHeight,
-      behavior: "smooth",
-    });
+    // Прокрутка к низу МГНОВЕННО (не smooth): при стриминге токены приходят часто,
+    // и плавные прокрутки наслаиваются друг на друга — окно дёргается вверх-вниз.
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
   }, [messages, loading]);
 
   async function sendMessage(text: string) {
