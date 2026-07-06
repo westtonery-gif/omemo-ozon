@@ -48,7 +48,11 @@ export async function resolveMetrics(
   const toolIds = new Set<string>();
   for (const id of needed) {
     const def = catalog[id];
-    if (def?.source === "seller_api" && def.tool) toolIds.add(def.tool);
+    if (
+      (def?.source === "seller_api" || def?.source === "external_market") &&
+      def.tool
+    )
+      toolIds.add(def.tool);
   }
   const toolResults = new Map<string, ToolResult>();
   for (const t of toolIds) toolResults.set(t, await runTool(t));
@@ -70,13 +74,21 @@ export async function resolveMetrics(
     const status = toolStateToStatus(tr.state);
     if (status !== "known") return { ...base, status };
 
-    const data = tr.data as Record<string, unknown> | null;
+    const data = tr.data as Record<string, unknown> | Array<Record<string, unknown>> | null;
     let raw: unknown;
-    if (def.scope === "product") {
+    if (Array.isArray(data) && def.aggregation === "avg") {
+      const nums = data
+        .map((row) => row[def.field ?? ""])
+        .filter((v): v is number => typeof v === "number");
+      raw =
+        nums.length > 0
+          ? Number((nums.reduce((sum, v) => sum + v, 0) / nums.length).toFixed(2))
+          : null;
+    } else if (def.scope === "product" && !Array.isArray(data)) {
       const list = (data?.products as Array<Record<string, unknown>>) ?? [];
       const row = list.find((p) => p.offer_id === opts.productRef?.offer_id) ?? list[0];
       raw = row?.[def.field ?? ""];
-    } else {
+    } else if (!Array.isArray(data)) {
       raw = data?.[def.field ?? ""];
     }
     if (typeof raw === "number") return { ...base, value: raw, status: "known" };

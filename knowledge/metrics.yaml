@@ -36,6 +36,16 @@ metrics:
     unit: orders
     availability: requires_subscription
 
+  reviews_count:
+    name: "Отзывы по товару"
+    source: seller_api
+    tool: get_products
+    scope: product
+    field: reviews_count
+    type: number
+    unit: reviews
+    availability: available
+
   # ── из инструмента get_sales_analytics (scope: store) ──
   revenue_30d:
     name: "Выручка магазина за 30 дней"
@@ -67,6 +77,37 @@ metrics:
     unit: sessions
     availability: requires_subscription
 
+  # ── внешний рынок: search_competitors (mock v1) ──
+  competitor_avg_price:
+    name: "Средняя цена конкурентов"
+    source: external_market
+    tool: search_competitors
+    field: price
+    aggregation: avg
+    type: number
+    unit: RUB
+    availability: available
+
+  competitor_avg_rating:
+    name: "Средний рейтинг конкурентов"
+    source: external_market
+    tool: search_competitors
+    field: rating
+    aggregation: avg
+    type: number
+    unit: rating
+    availability: available
+
+  competitor_avg_reviews:
+    name: "Среднее число отзывов у конкурентов"
+    source: external_market
+    tool: search_competitors
+    field: reviews_count
+    aggregation: avg
+    type: number
+    unit: reviews
+    availability: available
+
   # ── calculated (считает Formula Engine, НЕ LLM) ──
   conversion:
     name: "Конверсия магазина в заказ"
@@ -84,4 +125,13 @@ metrics:
     inputs: [stock, orders_30d]
     type: number
     unit: days
+    availability: derived
+
+  price_vs_market:
+    name: "Отклонение цены от рынка"
+    source: calculated
+    formula: price_vs_market
+    inputs: [price, competitor_avg_price]
+    type: percent
+    unit: "%"
     availability: derived

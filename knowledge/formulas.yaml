@@ -23,3 +23,12 @@ formulas:
       - "if orders_30d is null -> null"   # неизвестен темп -> неизвестен запас
       - "if orders_30d == 0 -> infinite"  # measured 0 != unknown
       - "round 1"
+
+  price_vs_market:
+    description: "Отклонение нашей цены от средней цены конкурентов, %"
+    inputs: [our_price, market_avg]
+    output: { id: price_vs_market, type: percent, unit: "%" }
+    calculation: "(our_price - market_avg) / market_avg * 100"
+    validation:
+      - "if market_avg <= 0 -> null"
+      - "round 2"

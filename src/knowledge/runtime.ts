@@ -13,6 +13,9 @@ const SALES_DROP_KEYWORDS = [
   "упал",
   "мало заказов",
   "выручк",
+  "проанализируй",
+  "анализ",
+  "магазин",
 ];
 
 function detectIntent(question: string): { scenario: string; unit_path: string } | null {

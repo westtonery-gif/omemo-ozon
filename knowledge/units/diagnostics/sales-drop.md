@@ -4,7 +4,7 @@ title: Продажи упали — локализация по воронке
 category: diagnostics
 agents: [ozonologist]
 keywords: [продажи упали, плохо продаётся, мало заказов, спад, выручка, диагностика]
-required_metrics: [stock, orders_30d, price, revenue_30d, conversion, stock_days]
+required_metrics: [stock, orders_30d, price, reviews_count, revenue_30d, conversion, stock_days, competitor_avg_price, competitor_avg_rating, competitor_avg_reviews, price_vs_market]
 # Правила диагноза — машиночитаемы. Движок применяет по убыванию priority,
 # первое совпавшее правило = primary. Условия — структурные (без строк-выражений).
 diagnosis_rules:
@@ -29,6 +29,18 @@ diagnosis_rules:
       severity: high
       confidence: medium
       finding: "Конверсия ниже порога — трафик есть, проблема в карточке/цене/отзывах."
+  - id: competition_weak
+    priority: 40
+    conditions:
+      - { metric: conversion, op: is_null }
+      - { metric: price_vs_market, op: gt, value: 15 }
+      - { metric: reviews_count, op: lt, value_metric: competitor_avg_reviews }
+    outcome:
+      funnel_stage: market_position
+      primary_unit: competition.market-position
+      severity: high
+      confidence: medium
+      finding: "Конверсия неизвестна, но рыночные данные показывают слабую позицию: цена выше рынка, а отзывов меньше, чем у конкурентов."
   - id: inconclusive
     priority: 1
     conditions: []                      # fallback

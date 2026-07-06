@@ -53,12 +53,12 @@ export async function getProductsDetailed(): Promise<OzonProduct[]> {
   const infoItems: ProductInfoItem[] = info?.data?.items ?? [];
 
   // Заказы за 30 дней по каждому SKU из аналитики. Если аналитика недоступна
-  // (лимит/нет подписки) — не роняем товары, просто оставляем заказы = 0.
-  let ordersBySku: Record<string, number> = {};
+  // (лимит/нет подписки) — не роняем товары, но помечаем заказы как неизвестные.
+  let ordersBySku: Record<string, number> | null = {};
   try {
     ordersBySku = await getOrdersBySku(30);
   } catch {
-    ordersBySku = {};
+    ordersBySku = null;
   }
 
   return infoItems.map((p) => {
@@ -75,7 +75,7 @@ export async function getProductsDetailed(): Promise<OzonProduct[]> {
       price,
       old_price: oldPrice || price,
       stock,
-      orders_30d: ordersBySku[String(p.sku ?? "")] ?? 0,
+      orders_30d: ordersBySku ? ordersBySku[String(p.sku ?? "")] ?? 0 : null,
     };
   });
 }

@@ -56,7 +56,9 @@ export default async function ProductsPage() {
                         {out ? "нет в наличии" : `${formatInt(p.stock)} шт.`}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-right">{formatInt(p.orders_30d)}</td>
+                    <td className="px-4 py-3 text-right">
+                      {p.orders_30d === null ? "н/д" : formatInt(p.orders_30d)}
+                    </td>
                   </tr>
                 );
               })}

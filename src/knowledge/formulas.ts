@@ -48,6 +48,20 @@ export function compute(formulaId: string, inputs: Inputs): FormulaResult {
       if (orders30 === 0) return result(formulaId, "infinite", "known", inputs); // measured 0 ≠ unknown
       return result(formulaId, Number((stock / (orders30 / 30)).toFixed(1)), "known", inputs);
     }
+    case "price_vs_market": {
+      const ourPrice = num(inputs.our_price);
+      const marketAvg = num(inputs.market_avg);
+      const status = inheritStatus(inputs.our_price, inputs.market_avg);
+      if (status !== "known" || ourPrice === null || marketAvg === null)
+        return result(formulaId, null, status, inputs);
+      if (marketAvg <= 0) return result(formulaId, null, "unknown", inputs);
+      return result(
+        formulaId,
+        Number((((ourPrice - marketAvg) / marketAvg) * 100).toFixed(2)),
+        "known",
+        inputs
+      );
+    }
     default:
       return result(formulaId, null, "unknown", inputs);
   }

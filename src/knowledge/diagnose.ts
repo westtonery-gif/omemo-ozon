@@ -9,6 +9,11 @@ function condOk(cond: Cond, bundle: MetricBundle): boolean {
   const m = bundle[cond.metric];
   const known = m && m.status === "known" && typeof m.value === "number";
   const v = known ? (m!.value as number) : null;
+  const rhsMetric = cond.value_metric ? bundle[cond.value_metric] : undefined;
+  const rhs =
+    rhsMetric && rhsMetric.status === "known" && typeof rhsMetric.value === "number"
+      ? rhsMetric.value
+      : cond.value;
 
   switch (cond.op) {
     case "not_null":
@@ -16,17 +21,17 @@ function condOk(cond: Cond, bundle: MetricBundle): boolean {
     case "is_null":
       return !m || m.status !== "known" || m.value === null;
     case "eq":
-      return known && v === cond.value;
+      return known && rhs !== undefined && v === rhs;
     case "ne":
-      return known && v !== cond.value;
+      return known && rhs !== undefined && v !== rhs;
     case "lt":
-      return known && v! < (cond.value as number);
+      return known && rhs !== undefined && v! < rhs;
     case "lte":
-      return known && v! <= (cond.value as number);
+      return known && rhs !== undefined && v! <= rhs;
     case "gt":
-      return known && v! > (cond.value as number);
+      return known && rhs !== undefined && v! > rhs;
     case "gte":
-      return known && v! >= (cond.value as number);
+      return known && rhs !== undefined && v! >= rhs;
     default:
       return false;
   }

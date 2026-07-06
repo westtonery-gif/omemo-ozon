@@ -1,7 +1,7 @@
 // Загрузка Knowledge Core: taxonomy / metrics / formulas / unit-файлы.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import yaml from "js-yaml";
+import * as yaml from "js-yaml";
 
 const ROOT = join(process.cwd(), "knowledge");
 
@@ -14,6 +14,7 @@ export interface MetricDef {
   tool?: string;
   scope?: "product" | "store";
   field?: string;
+  aggregation?: "avg";
   formula?: string;
   inputs?: string[];
   type: string;
@@ -30,7 +31,7 @@ export interface FormulaDef {
 export interface DiagnosisRule {
   id: string;
   priority: number;
-  conditions: Array<{ metric: string; op: string; value?: number }>;
+  conditions: Array<{ metric: string; op: string; value?: number; value_metric?: string }>;
   outcome: {
     funnel_stage: string;
     primary_unit: string | null;

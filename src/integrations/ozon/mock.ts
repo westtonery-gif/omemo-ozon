@@ -8,7 +8,8 @@ export interface OzonProduct {
   price: number; // текущая цена, ₽
   old_price: number; // цена до скидки, ₽
   stock: number; // остаток на складах, шт
-  orders_30d: number; // заказов за 30 дней
+  orders_30d: number | null; // заказов за 30 дней; null = нет данных
+  reviews_count?: number | null; // отзывы; null = нет данных
 }
 
 export const MOCK_PRODUCTS: OzonProduct[] = [
