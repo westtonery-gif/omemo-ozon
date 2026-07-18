@@ -1,31 +1,12 @@
 // Tool Registry — ЕДИНСТВЕННАЯ граница с Ozon. Возвращает нормализованные данные
 // и состояние (ToolErrorState). Никто выше в стек Ozon-клиент не импортирует.
 import { getProducts, getSalesSummary } from "../integrations/ozon/store";
+import {
+  getCompetitors,
+  getCategoryAnalytics,
+  getKeywords,
+} from "../integrations/mpstats/store";
 import type { ToolResult, ToolErrorState, ToolContext, ToolRunner } from "./types";
-
-const MOCK_COMPETITORS = [
-  {
-    title: "Базовая хлопковая футболка, черная",
-    price: 690,
-    rating: 4.7,
-    reviews_count: 1200,
-    url: "https://www.ozon.ru/mock/competitor-1",
-  },
-  {
-    title: "Футболка мужская однотонная",
-    price: 720,
-    rating: 4.6,
-    reviews_count: 860,
-    url: "https://www.ozon.ru/mock/competitor-2",
-  },
-  {
-    title: "Черная футболка regular fit",
-    price: 660,
-    rating: 4.8,
-    reviews_count: 1540,
-    url: "https://www.ozon.ru/mock/competitor-3",
-  },
-];
 
 function classify(e: unknown): ToolErrorState {
   const status = (e as { response?: { status?: number } })?.response?.status;
@@ -59,15 +40,51 @@ async function get_products(): Promise<ToolResult> {
   }
 }
 
-// Принимает контекст товара (title/category/price) — реальный источник будет
-// искать по нему. Пока возвращает mock (реальный поиск НЕ подключаем на этом шаге).
+// Конкуренты из MPSTATS (ниша по context.category). Форма массива —
+// {title, price, rating, reviews_count, url} — совпадает с тем, что усредняет
+// metrics.yaml. Мок ↔ живой решает src/integrations/mpstats/store.ts по MPSTATS_TOKEN.
 async function search_competitors(context?: ToolContext): Promise<ToolResult> {
-  void context; // TODO: сюда подключится реальный источник конкурентов
-  return {
-    tool: "search_competitors",
-    state: "ok",
-    data: MOCK_COMPETITORS,
-  };
+  try {
+    const competitors = await getCompetitors(context);
+    return {
+      tool: "search_competitors",
+      state: competitors.length ? "ok" : "empty",
+      data: competitors,
+    };
+  } catch (e) {
+    return { tool: "search_competitors", state: classify(e), data: null };
+  }
+}
+
+// Аналитика ниши из MPSTATS (медиана/средняя/разброс цен по категории товара).
+// Пока не привязана к metric_id в metrics.yaml — данные готовы, но в автоматической
+// диагностике не участвуют (нужен новый metric + правило в knowledge unit).
+async function get_category_analytics(context?: ToolContext): Promise<ToolResult> {
+  try {
+    const analytics = await getCategoryAnalytics(context);
+    return {
+      tool: "get_category_analytics",
+      state: analytics ? "ok" : "empty",
+      data: analytics,
+    };
+  } catch (e) {
+    return { tool: "get_category_analytics", state: classify(e), data: null };
+  }
+}
+
+// Ключевые запросы товара из MPSTATS (по context.sku). Также ещё не привязаны к
+// metric_id — готовый источник для SEO-инструмента, но не для авто-диагностики.
+async function get_keywords(context?: ToolContext): Promise<ToolResult> {
+  try {
+    const keywords = await getKeywords(context);
+    return {
+      tool: "get_keywords",
+      state: keywords.length ? "ok" : "empty",
+      data: keywords,
+    };
+  } catch (e) {
+    return { tool: "get_keywords", state: classify(e), data: null };
+  }
 }
 
 async function get_sales_analytics(): Promise<ToolResult> {
@@ -93,6 +110,10 @@ export const realToolRunner: ToolRunner = async (tool, context) => {
       return get_sales_analytics();
     case "search_competitors":
       return search_competitors(context);
+    case "get_category_analytics":
+      return get_category_analytics(context);
+    case "get_keywords":
+      return get_keywords(context);
     default:
       return { tool, state: "upstream_unavailable", data: null };
   }
